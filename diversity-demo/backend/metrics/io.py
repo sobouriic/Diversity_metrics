@@ -22,7 +22,7 @@ class Solution(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     """Request body for manual analysis."""
-    solutions: List[Solution] = Field(..., min_items=2, max_items=100)
+    solutions: List[Solution] = Field(..., min_items=2, max_items=500)
     mission: Optional[str] = Field(default=None, max_length=500)
     goal: Optional[str] = Field(default=None, max_length=500)
     

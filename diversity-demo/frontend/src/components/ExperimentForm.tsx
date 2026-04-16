@@ -13,11 +13,22 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
   const [solutionCount, setSolutionCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const formatJsonParseError = (fileName: string, error: unknown) => {
+    const defaultMessage = `Failed to parse ${fileName}. Please upload a valid JSON file.`
+
+    if (error instanceof Error && error.message) {
+      return `Failed to parse ${fileName}: ${error.message}`
+    }
+
+    return defaultMessage
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     const allData: any[] = []
+    const parseErrors: string[] = []
     let totalSolutions = 0
     let filesProcessed = 0
 
@@ -35,16 +46,57 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
             if (filesProcessed === files.length) {
               setUploadedData(allData)
               setSolutionCount(totalSolutions)
-              const message = `✓ Loaded ${files.length} file(s) with ${totalSolutions} total solutions`
+              if (allData.length > 0) {
+                const message = `✓ Loaded ${allData.length} file(s) with ${totalSolutions} total solutions`
+                if (onToast) {
+                  onToast(message, 'success')
+                } else {
+                  alert(message)
+                }
+              }
+
+              if (parseErrors.length > 0) {
+                const errorMessage = parseErrors.join(' ')
+                if (onToast) {
+                  onToast(errorMessage, 'error')
+                } else {
+                  alert(errorMessage)
+                }
+              }
+            }
+          } else {
+            parseErrors.push(
+              `${file.name} is valid JSON but does not contain a top-level "solutions" array.`
+            )
+            filesProcessed++
+
+            if (filesProcessed === files.length) {
+              setUploadedData(allData)
+              setSolutionCount(totalSolutions)
+              const errorMessage = parseErrors.join(' ')
               if (onToast) {
-                onToast(message, 'success')
+                onToast(errorMessage, 'error')
               } else {
-                alert(message)
+                alert(errorMessage)
               }
             }
           }
         } catch (error) {
           console.error(`Error parsing ${file.name}:`, error)
+          parseErrors.push(formatJsonParseError(file.name, error))
+          filesProcessed++
+
+          if (filesProcessed === files.length) {
+            setUploadedData(allData)
+            setSolutionCount(totalSolutions)
+
+            const errorMessage = parseErrors.join(' ')
+            if (onToast) {
+              onToast(errorMessage, 'error')
+            } else {
+              alert(errorMessage)
+            }
+          }
         }
       }
       reader.readAsText(file)

@@ -1,4 +1,4 @@
-#!/home/sobouric/Desktop/Diversity_metrics/diversity-demo/venv/bin/python3
+#!/tmp/folder/Diversity_metrics/diversity-demo/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

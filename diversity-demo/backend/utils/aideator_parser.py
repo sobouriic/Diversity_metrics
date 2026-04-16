@@ -119,6 +119,12 @@ def extract_solutions_from_tree(tree_dict: Dict[str, Any]) -> List[Dict[str, str
         if isinstance(posts, list):
             for post in posts:
                 traverse(post, parent_path)
+
+        # Recurse into achievers field (used by Aideator result trees)
+        achievers = node.get("achievers", [])
+        if isinstance(achievers, list):
+            for achiever in achievers:
+                traverse(achiever, parent_path)
     
     # Start tree traversal from root
     traverse(tree_dict)

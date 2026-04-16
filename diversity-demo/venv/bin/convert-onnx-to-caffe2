@@ -1,8 +1,6 @@
-#!/home/sobouric/Desktop/Diversity_metrics/diversity-demo/venv/bin/python3
-# -*- coding: utf-8 -*-
-import re
+#!/tmp/folder/Diversity_metrics/diversity-demo/venv/bin/python3
 import sys
 from caffe2.python.onnx.bin.conversion import onnx_to_caffe2
 if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
     sys.exit(onnx_to_caffe2())
