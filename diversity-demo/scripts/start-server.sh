@@ -108,7 +108,7 @@ echo -e "${GREEN}✓ Frontend build complete${NC}"
 echo ""
 echo -e "${BLUE}📋 Starting services in background...${NC}"
 
-nohup "${VENV_PYTHON}" -m uvicorn backend.api:app --host "${BACKEND_BIND_HOST}" --port "${BACKEND_PORT}" > "${LOG_DIR}/backend.log" 2>&1 &
+nohup env CORS_ALLOW_ORIGINS="http://${PUBLIC_HOST}:${FRONTEND_PORT},http://localhost:${FRONTEND_PORT}" "${VENV_PYTHON}" -m uvicorn backend.api:app --host "${BACKEND_BIND_HOST}" --port "${BACKEND_PORT}" > "${LOG_DIR}/backend.log" 2>&1 &
 BACKEND_PID=$!
 sleep 2
 

@@ -38,9 +38,9 @@ def _parse_bool(value: str) -> bool:
 
 
 def _parse_cors_origins() -> list[str]:
-    raw = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3008")
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3005,http://localhost:3008")
     origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
-    return origins or ["http://localhost:3008"]
+    return origins or ["http://localhost:3005", "http://localhost:3008"]
 
 
 def _create_request_id() -> str:
@@ -289,5 +289,5 @@ async def analyze_experiment(request: ExperimentAnalyzeRequest) -> MetricsRespon
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8005, reload=True)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
