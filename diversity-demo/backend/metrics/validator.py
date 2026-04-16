@@ -11,19 +11,7 @@ from metrics.diversity_scorer import compute_diversity
 
 @dataclass
 class ValidationReport:
-    """
-    Result of validation checks on a diversity score.
-    
-    Attributes:
-        valid: True if at least 3 of 4 checks passed
-        warnings: List of descriptive warning messages for failed checks
-        checks_passed: Number of passed checks (out of total_checks)
-        total_checks: Total number of validation checks (typically 4)
-        details: Dictionary with detailed check results and metadata
-                - score: The computed diversity score
-                - solution_count: Number of solutions analyzed
-                - checks: Dictionary mapping check names to pass/fail
-    """
+
     valid: bool
     warnings: List[str]
     checks_passed: int
@@ -37,72 +25,11 @@ def validate_diversity(
     context_mission: str = None,
     context_goal: str = None,
 ) -> ValidationReport:
-    """
-    Validate diversity score with comprehensive sanity checks.
-    
-    This function performs 4 independent validation checks:
-    
-    Check 1: Range Validation
-    - Verifies score is in [0.0, 1.0]
-    - Detects NaN (not a number) values
-    - Fails if score outside valid range
-    
-    Check 2: Numeric Validity
-    - Checks type is int or float
-    - Detects infinity values
-    - Ensures not NULL or other invalid types
-    
-    Check 3: Spot-check Recomputation
-    - Recomputes diversity score independently
-    - Compares with provided score
-    - Allows 1e-5 tolerance for floating-point rounding
-    - Tests that computation is deterministic
-    
-    Check 4: Semantic Reasonableness
-    - Tests identical solutions -> diversity ~0.0
-    - Verifies edge case behavior
-    - Detects abnormal embedding or distance calculation
-    
-    Validation Passing Criteria:
-    - At least 3 of 4 checks must pass
-    - If 3+ pass: valid=True (result can be reported)
-    - If <3 pass: valid=False (result should be rejected)
-    
-    Args:
-        solutions: List of solution text strings originally analyzed
-                  - Used for spot-check recomputation
-                  - May be 1+ solutions
-        computed_score: The diversity score to validate
-                       - Expected range: [0.0, 1.0]
-                       - Type: float
-        context_mission: Optional mission context used in original computation
-                        - Passed to recomputation for consistency
-                        - Example: "Reduce plastic waste"
-        context_goal: Optional goal context used in original computation
-                     - Passed to recomputation for consistency
-                     - Example: "Achieve 50% reduction by 2025"
-        
-    Returns:
-        ValidationReport containing:
-        - valid: bool indicating if score passed validation
-        - warnings: list of descriptive failure messages
-        - checks_passed: count of passed checks (0-4)
-        - total_checks: always 4 for this implementation
-        - details: comprehensive check results and metadata
-        
-    Example:
-        >>> solutions = ["Solution A", "Solution B"]
-        >>> score = 0.562
-        >>> report = validate_diversity(solutions, score)
-        >>> if report.valid:
-        ...     print(f"Score is valid ({report.checks_passed}/4 checks passed)")
-        ... else:
-        ...     print(f"Validation failed: {report.warnings}")
-    """
+   
     
     warnings = []
     checks_passed = 0
-    total_checks = 4  # Always 4 checks in current implementation
+    total_checks = 4 
     
     details = {
         "score": computed_score,

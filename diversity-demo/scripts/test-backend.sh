@@ -1,5 +1,7 @@
 #!/bin/bash
 # Run backend tests
 
+set -euo pipefail
+
 cd backend
-pytest tests/ -v --tb=short
+../venv/bin/python -m pytest tests/ -v --tb=short

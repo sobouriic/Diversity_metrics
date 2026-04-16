@@ -1,9 +1,11 @@
-#!/bin/bash
-# Stop the background servers started by start-server.sh
-# Usage: ./stop-server.sh
+
+
+set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PID_FILE="${APP_DIR}/.server.pid"
+BACKEND_PORT="${BACKEND_PORT:-8005}"
+FRONTEND_PORT="${FRONTEND_PORT:-3008}"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -24,8 +26,8 @@ fi
 
 # Extract PIDs if file exists
 if [ -f "$PID_FILE" ]; then
-    BACKEND_PID=$(grep "BACKEND=" "$PID_FILE" | cut -d= -f2)
-    FRONTEND_PID=$(grep "FRONTEND=" "$PID_FILE" | cut -d= -f2)
+    BACKEND_PID=$(grep "BACKEND=" "$PID_FILE" | cut -d= -f2 || true)
+    FRONTEND_PID=$(grep "FRONTEND=" "$PID_FILE" | cut -d= -f2 || true)
     
     # Kill backend
     if [ ! -z "$BACKEND_PID" ]; then
@@ -65,13 +67,13 @@ else
     echo -e "${YELLOW}Attempting to stop by port...${NC}"
     
     # Kill processes on known ports
-    lsof -ti:8004 2>/dev/null | xargs -r kill -9 2>/dev/null && echo -e "${GREEN}✓ Backend (port 8004) stopped${NC}" || echo -e "${YELLOW}⊘ No process on port 8004${NC}"
-    lsof -ti:3005 2>/dev/null | xargs -r kill -9 2>/dev/null && echo -e "${GREEN}✓ Frontend (port 3005) stopped${NC}" || echo -e "${YELLOW}⊘ No process on port 3005${NC}"
+    lsof -ti:"${BACKEND_PORT}" 2>/dev/null | xargs -r kill -9 2>/dev/null && echo -e "${GREEN}✓ Backend (port ${BACKEND_PORT}) stopped${NC}" || echo -e "${YELLOW}⊘ No process on port ${BACKEND_PORT}${NC}"
+    lsof -ti:"${FRONTEND_PORT}" 2>/dev/null | xargs -r kill -9 2>/dev/null && echo -e "${GREEN}✓ Frontend (port ${FRONTEND_PORT}) stopped${NC}" || echo -e "${YELLOW}⊘ No process on port ${FRONTEND_PORT}${NC}"
 fi
 
 echo ""
 echo -e "${GREEN}✅ Cleanup complete${NC}"
 echo ""
 echo -e "${BLUE}💡 Restart command:${NC}"
-echo "  ./scripts/start-server.sh 147.182.245.252"
+echo "  ./scripts/start-server.sh [PUBLIC_HOST]"
 echo ""

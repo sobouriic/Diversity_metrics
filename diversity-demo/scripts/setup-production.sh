@@ -1,7 +1,3 @@
-#!/bin/bash
-# Production deployment setup for systemd
-# Creates systemd service files for running the application as services
-# Usage: sudo ./scripts/setup-production.sh <SERVER_IP> [USERNAME]
 
 set -e
 
@@ -10,7 +6,7 @@ if [ "$EUID" -ne 0 ]; then
    exit 1
 fi
 
-SERVER_IP="${1:-$(hostname -I | awk '{print $1}')}"
+PUBLIC_HOST="${1:-localhost}"
 SERVICE_USER="${2:-www-data}"
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -22,7 +18,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}🔧 Setting up Production Systemd Services${NC}"
-echo -e "Server IP: ${SERVER_IP}"
+echo -e "Public Host: ${PUBLIC_HOST}"
 echo -e "App Directory: ${APP_DIR}"
 echo -e "Service User: ${SERVICE_USER}"
 echo ""
@@ -40,7 +36,7 @@ User=${SERVICE_USER}
 WorkingDirectory=${APP_DIR}
 Environment="PATH=${APP_DIR}/venv/bin"
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=${APP_DIR}/venv/bin/python -m uvicorn backend.api:app --host 0.0.0.0 --port 8004 --workers 4
+ExecStart=${APP_DIR}/venv/bin/python -m uvicorn backend.api:app --host 0.0.0.0 --port 8005 --workers 4
 Restart=always
 RestartSec=10
 
@@ -61,7 +57,7 @@ PartOf=diversity-metrics.target
 Type=simple
 User=${SERVICE_USER}
 WorkingDirectory=${APP_DIR}/frontend
-ExecStart=/usr/bin/npx http-server ./dist -p 3005 -c-1
+ExecStart=/usr/bin/npx http-server ./dist -p 3008 -c-1
 Restart=always
 RestartSec=10
 
@@ -87,7 +83,7 @@ echo -e "${GREEN}✓ Service target created${NC}"
 echo ""
 echo -e "${BLUE}🔨 Building frontend...${NC}"
 cd "${APP_DIR}/frontend"
-VITE_API_BASE="http://${SERVER_IP}:8004/api" npm run build
+VITE_API_BASE="http://${PUBLIC_HOST}:8005/api" npm run build
 cd "${APP_DIR}"
 echo -e "${GREEN}✓ Frontend built${NC}"
 
@@ -125,6 +121,6 @@ echo ""
 echo -e "${YELLOW}💡 Next steps:${NC}"
 echo "  1. Review the services: systemctl status diversity-metrics.target"
 echo "  2. Start services: sudo systemctl start diversity-metrics.target"
-echo "  3. Access the app at: http://${SERVER_IP}:3005"
+echo "  3. Access the app at: http://${PUBLIC_HOST}:3008"
 echo "  4. (Optional) Set up Nginx as reverse proxy (see SERVER_DEPLOYMENT.md)"
 echo ""

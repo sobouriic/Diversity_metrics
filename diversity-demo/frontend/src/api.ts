@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Support dynamic API base URL for server deployments
 // Uses environment variable VITE_API_BASE if provided, otherwise defaults to localhost
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8004/api'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8005/api'
 
 export interface Solution {
   title: string

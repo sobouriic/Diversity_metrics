@@ -8,6 +8,87 @@ interface Props {
   onToast?: (message: string, type: 'error' | 'success' | 'info') => void
 }
 
+const DEFAULT_DESCRIPTION =
+  'This is a solution approach designed to address identified challenges and opportunities within the domain.'
+const MAX_UPLOAD_FILES = 20
+const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024
+
+const normalizeSolution = (raw: any, index: number): Solution => {
+  const titleValue = raw?.name ?? raw?.title ?? `Solution ${index + 1}`
+  const title = String(titleValue).trim() || `Solution ${index + 1}`
+
+  let descriptionValue = raw?.description ?? ''
+  if (typeof descriptionValue === 'object' && descriptionValue !== null) {
+    descriptionValue = JSON.stringify(descriptionValue)
+  }
+
+  const descriptionText = String(descriptionValue ?? '').trim()
+  const description =
+    descriptionText.length >= 10 ? descriptionText : DEFAULT_DESCRIPTION
+
+  return { title, description }
+}
+
+const dedupeSolutions = (solutions: Solution[]): Solution[] => {
+  const seen = new Set<string>()
+  const deduped: Solution[] = []
+
+  solutions.forEach((solution) => {
+    const key = `${solution.title.toLowerCase()}::${solution.description.toLowerCase()}`
+    if (seen.has(key)) return
+    seen.add(key)
+    deduped.push(solution)
+  })
+
+  return deduped
+}
+
+const extractSolutionsFromTree = (payload: any): Solution[] => {
+  const extracted: Solution[] = []
+
+  const traverse = (node: any) => {
+    if (Array.isArray(node)) {
+      node.forEach(traverse)
+      return
+    }
+
+    if (!node || typeof node !== 'object') {
+      return
+    }
+
+    const nodeType =
+      typeof node.type === 'string' ? node.type.toLowerCase().trim() : ''
+    if (nodeType === 'solution') {
+      extracted.push(normalizeSolution(node, extracted.length))
+    }
+
+    Object.values(node).forEach((value) => {
+      if (value && typeof value === 'object') {
+        traverse(value)
+      }
+    })
+  }
+
+  traverse(payload)
+  return dedupeSolutions(extracted)
+}
+
+const extractSolutionsFromPayload = (payload: any): Solution[] => {
+  if (!payload || typeof payload !== 'object') {
+    return []
+  }
+
+  if (Array.isArray(payload.solutions)) {
+    return dedupeSolutions(
+      payload.solutions.map((solution: any, idx: number) =>
+        normalizeSolution(solution, idx)
+      )
+    )
+  }
+
+  return extractSolutionsFromTree(payload)
+}
+
 export default function ExperimentForm({ onUploadSolutions, loading, onToast }: Props) {
   const [uploadedData, setUploadedData] = useState<any[]>([])
   const [solutionCount, setSolutionCount] = useState(0)
@@ -27,76 +108,79 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
     const files = e.target.files
     if (!files || files.length === 0) return
 
+    const selectedFiles = Array.from(files).slice(0, MAX_UPLOAD_FILES)
+    if (files.length > MAX_UPLOAD_FILES) {
+      onToast?.(
+        `Only the first ${MAX_UPLOAD_FILES} files were processed.`,
+        'info'
+      )
+    }
+
     const allData: any[] = []
     const parseErrors: string[] = []
     let totalSolutions = 0
     let filesProcessed = 0
 
-    Array.from(files).forEach((file) => {
+    const finalizeIfDone = () => {
+      if (filesProcessed !== selectedFiles.length) return
+
+      setUploadedData(allData)
+      setSolutionCount(totalSolutions)
+
+      if (allData.length > 0) {
+        const message = `✓ Loaded ${allData.length} file(s) with ${totalSolutions} total solutions`
+        if (onToast) {
+          onToast(message, 'success')
+        } else {
+          alert(message)
+        }
+      }
+
+      if (parseErrors.length > 0) {
+        const errorMessage = parseErrors.join(' ')
+        if (onToast) {
+          onToast(errorMessage, 'error')
+        } else {
+          alert(errorMessage)
+        }
+      }
+    }
+
+    selectedFiles.forEach((file) => {
+      if (file.size > MAX_UPLOAD_FILE_BYTES) {
+        parseErrors.push(
+          `${file.name} exceeds 10MB and was skipped.`
+        )
+        filesProcessed++
+        finalizeIfDone()
+        return
+      }
+
       const reader = new FileReader()
       reader.onload = (event) => {
         try {
           const data = JSON.parse(event.target?.result as string)
-          
-          if (data.solutions && Array.isArray(data.solutions)) {
-            allData.push({ filename: file.name, data })
-            totalSolutions += data.solutions.length
-            filesProcessed++
-            
-            if (filesProcessed === files.length) {
-              setUploadedData(allData)
-              setSolutionCount(totalSolutions)
-              if (allData.length > 0) {
-                const message = `✓ Loaded ${allData.length} file(s) with ${totalSolutions} total solutions`
-                if (onToast) {
-                  onToast(message, 'success')
-                } else {
-                  alert(message)
-                }
-              }
+          const solutions = extractSolutionsFromPayload(data)
 
-              if (parseErrors.length > 0) {
-                const errorMessage = parseErrors.join(' ')
-                if (onToast) {
-                  onToast(errorMessage, 'error')
-                } else {
-                  alert(errorMessage)
-                }
-              }
-            }
+          if (solutions.length > 0) {
+            allData.push({
+              filename: file.name,
+              data: { ...data, solutions },
+            })
+            totalSolutions += solutions.length
           } else {
             parseErrors.push(
-              `${file.name} is valid JSON but does not contain a top-level "solutions" array.`
+              `${file.name} did not contain any solution posts (type="solution").`
             )
-            filesProcessed++
-
-            if (filesProcessed === files.length) {
-              setUploadedData(allData)
-              setSolutionCount(totalSolutions)
-              const errorMessage = parseErrors.join(' ')
-              if (onToast) {
-                onToast(errorMessage, 'error')
-              } else {
-                alert(errorMessage)
-              }
-            }
           }
+
+          filesProcessed++
+          finalizeIfDone()
         } catch (error) {
           console.error(`Error parsing ${file.name}:`, error)
           parseErrors.push(formatJsonParseError(file.name, error))
           filesProcessed++
-
-          if (filesProcessed === files.length) {
-            setUploadedData(allData)
-            setSolutionCount(totalSolutions)
-
-            const errorMessage = parseErrors.join(' ')
-            if (onToast) {
-              onToast(errorMessage, 'error')
-            } else {
-              alert(errorMessage)
-            }
-          }
+          finalizeIfDone()
         }
       }
       reader.readAsText(file)
@@ -105,7 +189,7 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
 
   const handleUploadAnalyze = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!uploadedData || uploadedData.length === 0 || !onUploadSolutions) {
       const message = 'Please upload at least one results.json file first'
       if (onToast) {
@@ -115,31 +199,12 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
       }
       return
     }
-    
+
     const allSolutions: Solution[] = []
-    
     uploadedData.forEach(({ data }) => {
-      const solutions = data.solutions.map((s: any, idx: number) => {
-        const title = s.name || s.title || `Solution ${idx + 1}`
-        let desc = s.description || ''
-        
-        if (typeof desc === 'object') {
-          desc = JSON.stringify(desc)
-        }
-        
-        if (!desc || desc.trim().length < 10) {
-          desc = `This is a solution approach designed to address identified challenges and opportunities within the domain.`
-        }
-        
-        return {
-          title: title.trim(),
-          description: desc.trim()
-        }
-      })
-      
-      allSolutions.push(...solutions)
+      allSolutions.push(...(data.solutions as Solution[]))
     })
-    
+
     console.log(`Analyzing ${allSolutions.length} solutions from ${uploadedData.length} file(s)`)
     onUploadSolutions(allSolutions)
   }
@@ -158,7 +223,7 @@ export default function ExperimentForm({ onUploadSolutions, loading, onToast }: 
           style={{ padding: '12px', border: '2px dashed #cccccc', borderRadius: '4px', cursor: 'pointer' }}
         />
         <p className="form-hint">Select one or more results.json files from your Aideator experiment folders</p>
-        
+
         {solutionCount > 0 && (
           <p style={{ color: '#4caf50', fontWeight: 'bold', marginTop: '10px' }}>
             ✓ Loaded {uploadedData.length} file(s) with {solutionCount} total solutions
