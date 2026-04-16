@@ -33,3 +33,4 @@ htmlcov/
 node_modules/
 .DS_Store
 .backend_deps_installed
+venv/
