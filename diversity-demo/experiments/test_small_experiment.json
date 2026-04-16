@@ -1,0 +1,16 @@
+{
+  "experiment_id": "test_small_001",
+  "mission": "Quick test experiment",
+  "goal": "Test diversity metrics with minimal data",
+  "solutions": [
+    {
+      "name": "Solution A - Direct Approach",
+      "description": "A straightforward solution that addresses the problem head-on using established methods and well-known technologies proven to work in similar contexts."
+    },
+    {
+      "name": "Solution B - Innovative Approach",
+      "description": "An alternative solution that takes an unconventional angle using emerging technologies and novel thinking to address the same underlying challenge in a completely different way."
+    }
+  ],
+  "completed_at": "2026-04-16T10:30:00Z"
+}

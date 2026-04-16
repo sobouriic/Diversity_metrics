@@ -1,0 +1,145 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8f8f6;
+}
+
+.app-header {
+  background: white;
+  border-bottom: 1px solid #e0dfd9;
+  padding: 2rem 0;
+}
+
+.app-header h1 {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: #2c2c2a;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #6b6b67;
+}
+
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2rem;
+}
+
+.layout-full {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input-panel {
+  background: white;
+  border: 1px solid #e0dfd9;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e0dfd9;
+  background: #fafaf8;
+}
+
+.tab {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #6b6b67;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background: #f1f1ee;
+  color: #2c2c2a;
+}
+
+.tab.active {
+  color: #2c2c2a;
+  border-bottom-color: #2c2c2a;
+  background: white;
+}
+
+.tab-content {
+  padding: 1.5rem;
+}
+
+.results-panel {
+  background: white;
+  border: 1px solid #e0dfd9;
+  border-radius: 8px;
+  padding: 2rem;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-box {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 1rem;
+  color: #7f1d1d;
+}
+
+.loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #6b6b67;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #e0dfd9;
+  border-top-color: #2c2c2a;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  color: #9a9a95;
+  text-align: center;
+}
