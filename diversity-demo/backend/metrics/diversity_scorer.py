@@ -60,16 +60,12 @@ def compute_diversity(
             context_prefix + sol for sol in solutions
         ]
     
-    embeddings = embed_texts(enriched_solutions)    
+    embeddings = embed_texts(enriched_solutions)
     distances = pairwise_distances(embeddings)
     
     n = len(solutions)
-    upper_triangle = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            upper_triangle.append(distances[i][j])
-    
-    diversity_score = float(np.mean(upper_triangle))    
+    upper_triangle_indices = np.triu_indices(n, k=1)
+    diversity_score = float(np.mean(distances[upper_triangle_indices]))
     diversity_score = max(0.0, min(1.0, diversity_score))
     
     return diversity_score

@@ -50,6 +50,11 @@ Alternative keys supported for tree mode:
 - `idea_tree`
 - `posts`
 
+If both `tree` and `solutions` are sent in the same payload, the API prioritizes tree input and ignores `solutions`.
+
+Current request cap:
+- maximum solutions per request: `3000`
+
 ## Endpoint 3: Experiment folder analysis
 
 `POST /api/analyze-experiment`

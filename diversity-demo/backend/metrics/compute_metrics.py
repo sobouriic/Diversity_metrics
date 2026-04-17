@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from metrics.diversity_scorer import compute_diversity
 from metrics.validator import validate_diversity
 from metrics.io import MetricsResponse, SolutionMetrics, ValidationInfo, Solution
+from utils.embeddings import get_embedder
 
 
 def compute_all_metrics(
@@ -118,6 +119,9 @@ def compute_all_metrics(
             )
         )
     
+    embedder = get_embedder()
+    embedding_dimension = int(embedder.model.get_sentence_embedding_dimension())
+
     # Step 5: Build comprehensive response object
     return MetricsResponse(
         diversity_score=diversity_score,
@@ -132,8 +136,8 @@ def compute_all_metrics(
             }
         ),
         metadata={
-            "embeddings_model": "all-MiniLM-L6-v2",
-            "embeddings_dimension": 384,
+            "embeddings_model": embedder.model_name,
+            "embeddings_dimension": embedding_dimension,
             "total_solutions": len(solutions),
             "solutions_count": len(solutions),
             "context_provided": {

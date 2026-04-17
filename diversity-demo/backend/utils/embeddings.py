@@ -1,6 +1,8 @@
+import os
+from typing import List
+
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from typing import List, Union
 from sklearn.metrics.pairwise import cosine_distances
 
 
@@ -21,15 +23,47 @@ class EmbedderEngine:
         Raises:
             OSError: If model cannot be downloaded or loaded
         """
-        self.model_name = model_name
-        self.model = SentenceTransformer(model_name)
+        self.model_name = os.getenv("EMBEDDINGS_MODEL", model_name)
+        self.batch_size = self._env_int("EMBEDDING_BATCH_SIZE", 64, min_value=1)
+        self.normalize_embeddings = self._env_bool("EMBEDDING_NORMALIZE", True)
+
+        model_kwargs = {}
+        configured_device = os.getenv("EMBEDDING_DEVICE", "").strip()
+        if configured_device:
+            model_kwargs["device"] = configured_device
+
+        self.model = SentenceTransformer(self.model_name, **model_kwargs)
+
+    @staticmethod
+    def _env_int(name: str, default: int, min_value: int = 1) -> int:
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+        try:
+            value = int(raw)
+            return max(min_value, value)
+        except ValueError:
+            return default
+
+    @staticmethod
+    def _env_bool(name: str, default: bool) -> bool:
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
 
     def embed(self, texts: List[str]) -> np.ndarray:
         
         if not texts:
             return np.array([])
         
-        embeddings = self.model.encode(texts, convert_to_numpy=True)        
+        embeddings = self.model.encode(
+            texts,
+            batch_size=self.batch_size,
+            show_progress_bar=False,
+            convert_to_numpy=True,
+            normalize_embeddings=self.normalize_embeddings,
+        )
         if embeddings.ndim == 1:
             embeddings = embeddings.reshape(1, -1)
         
@@ -109,8 +143,16 @@ class EmbedderEngine:
             >>> print(distances.shape)  # (3, 3)
             >>> print(distances[0,1])  # Distance between "apple" and "orange"
         """
-        distances = cosine_distances(embeddings)
-        return distances
+        if embeddings.ndim == 1:
+            embeddings = embeddings.reshape(1, -1)
+
+        if self.normalize_embeddings:
+            similarity = np.matmul(embeddings, embeddings.T)
+            distances = 1.0 - similarity
+            np.fill_diagonal(distances, 0.0)
+            return np.clip(distances, 0.0, 2.0)
+
+        return cosine_distances(embeddings)
 
 
 _embedder = None

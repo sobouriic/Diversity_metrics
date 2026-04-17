@@ -22,3 +22,15 @@ Defaults:
 - No server IP is committed in scripts.
 - API request validation returns standardized JSON errors with request IDs.
 - Experiment folder analysis is path-restricted by default to the project `experiments/` directory.
+
+## Performance Tuning
+
+For faster runtime on larger batches:
+
+- `EMBEDDING_BATCH_SIZE=96` (or `128`) to increase embedding throughput
+- `VALIDATION_SPOTCHECK_SIZE=12` to keep validation light on large inputs
+
+For faster server restarts:
+
+- `SKIP_FRONTEND_BUILD=1 ./scripts/start-server.sh` to skip frontend rebuild
+- `UVICORN_WORKERS=2 ./scripts/start-server.sh` for higher API throughput on multi-core machines

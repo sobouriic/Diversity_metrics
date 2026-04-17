@@ -22,12 +22,30 @@ class Solution(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     """Request body for manual analysis or idea-tree analysis."""
-    solutions: Optional[List[Solution]] = Field(default=None, min_items=2, max_items=500)
+    solutions: Optional[List[Solution]] = Field(default=None, min_items=2, max_items=3000)
     tree: Optional[Dict[str, Any]] = None
     idea_tree: Optional[Dict[str, Any]] = None
     posts: Optional[List[Any]] = None
     mission: Optional[str] = Field(default=None, max_length=500)
     goal: Optional[str] = Field(default=None, max_length=500)
+
+    @model_validator(mode='before')
+    @classmethod
+    def prefer_tree_payload_when_mixed(cls, data: Any):
+        if not isinstance(data, dict):
+            return data
+
+        has_tree = isinstance(data.get("tree"), dict) and len(data.get("tree", {})) > 0
+        has_idea_tree = isinstance(data.get("idea_tree"), dict) and len(data.get("idea_tree", {})) > 0
+        has_posts = isinstance(data.get("posts"), list) and len(data.get("posts", [])) > 0
+
+        # If tree-like payload exists, ignore explicit solutions list.
+        if has_tree or has_idea_tree or has_posts:
+            normalized = dict(data)
+            normalized.pop("solutions", None)
+            return normalized
+
+        return data
     
     @validator('mission', 'goal', pre=True, always=True)
     def clean_context(cls, v):
@@ -46,11 +64,6 @@ class AnalyzeRequest(BaseModel):
             raise ValueError(
                 "Provide either `solutions` (manual mode) or idea-tree data "
                 "(`tree`, `idea_tree`, or `posts`)."
-            )
-
-        if has_solutions and (has_tree or has_idea_tree or has_posts):
-            raise ValueError(
-                "Provide either `solutions` or idea-tree data, not both in the same request."
             )
         return self
 

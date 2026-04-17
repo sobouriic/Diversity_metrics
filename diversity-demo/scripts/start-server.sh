@@ -9,6 +9,9 @@
 #   BACKEND_PORT     Backend port (default: 8005)
 #   FRONTEND_PORT    Frontend static server port (default: 3008)
 #   BACKEND_BIND_HOST Interface for backend bind (default: 0.0.0.0)
+#   UVICORN_WORKERS  Uvicorn worker count (default: 1)
+#   SKIP_FRONTEND_BUILD Skip frontend build if set to 1 (default: 0)
+#   FORCE_FRONTEND_BUILD Force frontend build if set to 1 (default: 0)
 #
 # NOTE:
 # - Do not hardcode public IPs in this script.
@@ -20,6 +23,9 @@ PUBLIC_HOST="${PUBLIC_HOST:-${1:-localhost}}"
 BACKEND_PORT="${BACKEND_PORT:-${2:-8005}}"
 FRONTEND_PORT="${FRONTEND_PORT:-${3:-3008}}"
 BACKEND_BIND_HOST="${BACKEND_BIND_HOST:-0.0.0.0}"
+UVICORN_WORKERS="${UVICORN_WORKERS:-1}"
+SKIP_FRONTEND_BUILD="${SKIP_FRONTEND_BUILD:-0}"
+FORCE_FRONTEND_BUILD="${FORCE_FRONTEND_BUILD:-0}"
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PID_FILE="${APP_DIR}/.server.pid"
@@ -28,6 +34,51 @@ VENV_DIR="${APP_DIR}/venv"
 VENV_PYTHON="${VENV_DIR}/bin/python"
 
 mkdir -p "${LOG_DIR}"
+
+frontend_needs_build() {
+    if [ "${FORCE_FRONTEND_BUILD}" = "1" ]; then
+        return 0
+    fi
+
+    if [ "${SKIP_FRONTEND_BUILD}" = "1" ]; then
+        return 1
+    fi
+
+    if [ ! -d "frontend/dist" ]; then
+        return 0
+    fi
+
+    local marker="frontend/dist/.build_marker"
+    if [ ! -f "${marker}" ]; then
+        return 0
+    fi
+
+    if [ -f "frontend/package.json" ] && [ "frontend/package.json" -nt "${marker}" ]; then
+        return 0
+    fi
+
+    if [ -f "frontend/package-lock.json" ] && [ "frontend/package-lock.json" -nt "${marker}" ]; then
+        return 0
+    fi
+
+    if [ -f "frontend/index.html" ] && [ "frontend/index.html" -nt "${marker}" ]; then
+        return 0
+    fi
+
+    if [ -f "frontend/vite.config.ts" ] && [ "frontend/vite.config.ts" -nt "${marker}" ]; then
+        return 0
+    fi
+
+    if [ -d "frontend/src" ] && find frontend/src -type f -newer "${marker}" -print -quit | grep -q .; then
+        return 0
+    fi
+
+    if [ -d "frontend/public" ] && find frontend/public -type f -newer "${marker}" -print -quit | grep -q .; then
+        return 0
+    fi
+
+    return 1
+}
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -97,18 +148,23 @@ else
     echo -e "${YELLOW}⊘ Frontend dependencies already installed${NC}"
 fi
 
-echo ""
-echo -e "${BLUE}🔨 Building frontend...${NC}"
-(
-    cd frontend
-    VITE_API_BASE="http://${PUBLIC_HOST}:${BACKEND_PORT}/api" npm run build
-)
-echo -e "${GREEN}✓ Frontend build complete${NC}"
+if frontend_needs_build; then
+    echo ""
+    echo -e "${BLUE}🔨 Building frontend...${NC}"
+    (
+        cd frontend
+        VITE_API_BASE="http://${PUBLIC_HOST}:${BACKEND_PORT}/api" npm run build
+    )
+    touch frontend/dist/.build_marker
+    echo -e "${GREEN}✓ Frontend build complete${NC}"
+else
+    echo -e "${YELLOW}⊘ Frontend build skipped (no changes detected)${NC}"
+fi
 
 echo ""
 echo -e "${BLUE}📋 Starting services in background...${NC}"
 
-nohup env CORS_ALLOW_ORIGINS="http://${PUBLIC_HOST}:${FRONTEND_PORT},http://localhost:${FRONTEND_PORT}" "${VENV_PYTHON}" -m uvicorn backend.api:app --host "${BACKEND_BIND_HOST}" --port "${BACKEND_PORT}" > "${LOG_DIR}/backend.log" 2>&1 &
+nohup env CORS_ALLOW_ORIGINS="http://${PUBLIC_HOST}:${FRONTEND_PORT},http://localhost:${FRONTEND_PORT}" "${VENV_PYTHON}" -m uvicorn backend.api:app --host "${BACKEND_BIND_HOST}" --port "${BACKEND_PORT}" --workers "${UVICORN_WORKERS}" > "${LOG_DIR}/backend.log" 2>&1 &
 BACKEND_PID=$!
 sleep 2
 

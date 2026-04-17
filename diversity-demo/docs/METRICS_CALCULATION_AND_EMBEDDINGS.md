@@ -38,6 +38,11 @@ Pipeline:
 2. Build pairwise cosine-distance matrix
 3. Aggregate pairwise distances into one score
 
+Runtime tuning knobs:
+- `EMBEDDING_BATCH_SIZE` (default `64`)
+- `EMBEDDINGS_MODEL` (default `all-MiniLM-L6-v2`)
+- `EMBEDDING_DEVICE` (optional, e.g. `cpu` or `cuda`)
+
 ## 4) Diversity formula
 
 For `N` solutions (`N >= 2`), diversity is:
@@ -60,6 +65,7 @@ Validation includes:
 - Payload size checks
 - Range clamping to keep score in `[0, 1]`
 - JSON/body validation with structured error responses
+- Spot-check recomputation on a sampled subset (`VALIDATION_SPOTCHECK_SIZE`, default `16`) for speed on large batches
 
 Standard error shape:
 

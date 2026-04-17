@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EXPERIMENTS_BASE_DIR = (PROJECT_ROOT / "experiments").resolve()
 
-MAX_SOLUTIONS = 500
+MAX_SOLUTIONS = 3000
 MAX_TOTAL_CHARACTERS = 750_000
 
 
